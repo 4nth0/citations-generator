@@ -1,0 +1,14 @@
+{{> header}}
+<ul>
+  {{{pagination page pages}}}
+  {{#each citations}}
+  <li>
+    <blockquote class="otro-blockquote">
+    <a href="{{pagePath page @index}}">{{.}}</a>
+    <span>Napoléon 1er</span>
+  </blockquote>
+  </li>
+  {{/each}}
+  {{{pagination page pages}}}
+</ul>
+{{> footer}}

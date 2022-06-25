@@ -1,0 +1,23 @@
+{{> header}}
+<blockquote class="otro-blockquote">
+    {{citation}}
+    <span>Napoléon 1er</span>
+</blockquote>
+
+<div class="related-quotes">
+    {{#if citation_prev}}
+    <blockquote class="otro-blockquote">
+        <a href="{{relatedPagePath citation_prev.Index}}">{{citation_prev.Citation}}</a>
+        <span>Napoléon 1er</span>
+    </blockquote>
+    {{/if}}
+    {{#if citation_next}}
+    <blockquote class="otro-blockquote">
+        <a href="{{relatedPagePath citation_next.Index}}">{{citation_next.Citation}}</a>
+        <span>Napoléon 1er</span>
+    </blockquote>
+    {{/if}}
+</div>
+
+
+{{> footer}}
