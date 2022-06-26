@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/4nth0/citations-generator/internal/citations"
+	"github.com/4nth0/citations-generator/internal/config"
 	"github.com/4nth0/citations-generator/internal/generator"
 	"github.com/4nth0/citations-generator/internal/template"
 	cp "github.com/otiai10/copy"
@@ -18,7 +19,12 @@ const (
 )
 
 func main() {
-	citationsClient := citations.New("./citations.json")
+	config, err := config.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	citationsClient := citations.New(config.Generator.Source)
 	citations, err := citationsClient.LoadCitations()
 	if err != nil {
 		fmt.Println(err)
@@ -27,7 +33,7 @@ func main() {
 
 	InitExportForlder()
 
-	tpl, err := initTemplateEngine()
+	tpl, err := initTemplateEngine(config)
 	if err != nil {
 		panic(err)
 	}
@@ -36,13 +42,13 @@ func main() {
 		tpl,
 		citations,
 		map[string]string{
-			"detail":  "./layouts/detail.hbs",
-			"listing": "./layouts/listing.hbs",
+			"detail":  config.Generator.Templates.Detail.Template,
+			"listing": config.Generator.Templates.Listing.Template,
 		},
 		map[string]string{
-			"index":   exportPath + "/index.html",
-			"detail":  exportPath + "/citation-%d.html",
-			"listing": exportPath + "/index-%d.html",
+			"index":   config.Generator.Templates.Index.Dest,
+			"detail":  config.Generator.Templates.Detail.Dest,
+			"listing": config.Generator.Templates.Listing.Dest,
 		},
 	)
 
@@ -50,15 +56,14 @@ func main() {
 	gen.GenerateIndexPage(perpPage)
 }
 
-func initTemplateEngine() (*template.Client, error) {
+func initTemplateEngine(config *config.Config) (template.Client, error) {
 	return template.New(
-		template.WithPartial("header", "./layouts/partials/header.hbs"),
-		template.WithPartial("footer", "./layouts/partials/footer.hbs"),
+		template.WithPartials(config.Generator.Templates.Partials),
 		template.WithHelper("pagePath", func(page, index int) string {
-			return fmt.Sprintf("citation-%d.html", page*perpPage+index)
+			return fmt.Sprintf(config.Generator.Paths.Detail, page*perpPage+index)
 		}),
 		template.WithHelper("relatedPagePath", func(index int) string {
-			return fmt.Sprintf("citation-%d.html", index)
+			return fmt.Sprintf(config.Generator.Paths.Detail, index)
 		}),
 		template.WithHelper("pagination", func(page, pages int) string {
 			links := []string{}
@@ -66,9 +71,9 @@ func initTemplateEngine() (*template.Client, error) {
 			for i := 0; i < pages+1; i++ {
 				var path string
 				if i == 0 {
-					path = "index.html"
+					path = config.Generator.Paths.Index
 				} else {
-					path = fmt.Sprintf("index-%d.html", i)
+					path = fmt.Sprintf(config.Generator.Paths.Listing, i)
 				}
 
 				currentClass := ""
@@ -88,7 +93,6 @@ func initTemplateEngine() (*template.Client, error) {
 	)
 }
 
-// Init Export Folder that delete container files to avoid conflict
 func InitExportForlder() {
 	os.RemoveAll(exportPath)
 	os.Mkdir(exportPath, 0755)

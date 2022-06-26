@@ -3,18 +3,20 @@ package generator
 import (
 	"fmt"
 	"os"
-
-	"github.com/4nth0/citations-generator/internal/template"
 )
 
+type TemplateManager interface {
+	UseLayout(path string) (func(map[string]interface{}) (string, error), error)
+}
+
 type Client struct {
-	tpl       *template.Client
+	tpl       TemplateManager
 	Citations []string
 	Paths     map[string]string
 	Layouts   map[string]string
 }
 
-func New(tpl *template.Client, citations []string, layouts map[string]string, paths map[string]string) *Client {
+func New(tpl TemplateManager, citations []string, layouts map[string]string, paths map[string]string) *Client {
 	return &Client{
 		tpl:       tpl,
 		Citations: citations,

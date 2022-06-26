@@ -6,4 +6,5 @@ require (
 	github.com/aymerick/raymond v2.0.2+incompatible // indirect
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69 // indirect
 	github.com/otiai10/copy v1.7.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

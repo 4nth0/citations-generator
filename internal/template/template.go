@@ -7,14 +7,18 @@ import (
 	"github.com/aymerick/raymond"
 )
 
-type Client struct {
+type Client interface {
+	UseLayout(path string) (func(map[string]interface{}) (string, error), error)
+}
+
+type client struct {
 	Partials map[string]string
 }
 
-type Option func(*Client) error
+type Option func(*client) error
 
 func WithPartial(name, path string) Option {
-	return func(c *Client) error {
+	return func(c *client) error {
 		partialRaw, err := LoadFile(path)
 		if err != nil {
 			return err
@@ -25,15 +29,30 @@ func WithPartial(name, path string) Option {
 	}
 }
 
+func WithPartials(partials map[string]string) Option {
+	return func(c *client) error {
+		for name, path := range partials {
+			partialRaw, err := LoadFile(path)
+			if err != nil {
+				return err
+			}
+			c.Partials[name] = string(partialRaw)
+			raymond.RegisterPartial(name, string(partialRaw))
+		}
+
+		return nil
+	}
+}
+
 func WithHelper(name string, helper interface{}) Option {
-	return func(c *Client) error {
+	return func(c *client) error {
 		raymond.RegisterHelper(name, helper)
 		return nil
 	}
 }
 
-func New(opts ...Option) (*Client, error) {
-	c := &Client{
+func New(opts ...Option) (Client, error) {
+	c := &client{
 		Partials: make(map[string]string),
 	}
 
@@ -47,9 +66,7 @@ func New(opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-type TemplateExec func(map[string]interface{}) (string, error)
-
-func (c *Client) UseLayout(path string) (TemplateExec, error) {
+func (c *client) UseLayout(path string) (func(map[string]interface{}) (string, error), error) {
 	raw, err := LoadFile(path)
 	if err != nil {
 		return nil, err

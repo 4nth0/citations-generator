@@ -6,18 +6,22 @@ import (
 	"os"
 )
 
-type Client struct {
+type Client interface {
+	LoadCitations() ([]string, error)
+}
+
+type client struct {
 	Path      string
 	Citations []string
 }
 
-func New(path string) *Client {
-	return &Client{
+func New(path string) Client {
+	return &client{
 		Path: path,
 	}
 }
 
-func (c *Client) LoadCitations() ([]string, error) {
+func (c *client) LoadCitations() ([]string, error) {
 	raw, err := LoadFile(c.Path)
 	if err != nil {
 		return nil, err
