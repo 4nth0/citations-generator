@@ -14,8 +14,6 @@ import (
 const (
 	publicFolderPath = "./public"
 	exportFolderPath = "./export"
-
-	perpPage = 10
 )
 
 func main() {
@@ -54,7 +52,7 @@ func main() {
 	)
 
 	gen.GenerateDetailPages()
-	gen.GenerateIndexPage(perpPage)
+	gen.GenerateIndexPage(config.Generator.CitationsPerPage)
 }
 
 func initTemplateEngine(config *config.Config) (template.Client, error) {

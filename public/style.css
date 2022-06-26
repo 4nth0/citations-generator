@@ -42,7 +42,7 @@ li {
 
 
 @import url(https://fonts.googleapis.com/css?family=Open+Sans:400italic);
-.otro-blockquote{
+.blockquote{
     font-size: 1.4em;
     width: 60%;
     max-width: 650px;
@@ -58,7 +58,7 @@ li {
     box-sizing: border-box;
 }
 
-.otro-blockquote::before{
+.blockquote::before{
   font-family:Arial;
   content: "\201C";
   color:#78C0A8;
@@ -68,11 +68,11 @@ li {
   top:-10px;
 }
 
-.otro-blockquote::after{
+.blockquote::after{
   content: '';
 }
 
-.otro-blockquote span{
+.blockquote span{
   display:block;
   color:#333333;
   font-style: normal;
@@ -80,12 +80,12 @@ li {
   margin-top:1em;
 }
 
-.otro-blockquote a {
+.blockquote a {
     color: #555555;
     text-decoration: none;
 }
 
-.otro-blockquote a:hover {
+.blockquote a:hover {
     text-decoration: underline;
 }
 
@@ -111,9 +111,10 @@ li {
 }
 
 .pagination {
-    width: 600px;
+    max-width: 600px;
     margin: 0 auto;
     text-align: center;
+    width: 100%;
 }
 
 .pagination li {
@@ -141,4 +142,19 @@ li {
 
 .footer {
     margin-top: 40px;
+}
+
+@media screen and (min-width : 768px) and (max-width : 1023px) {
+    
+}
+
+@media screen and (max-width : 767px) {
+    .blockquote {
+        padding: 2.2em 10px 1.2em 15px;
+        width:90%;
+    }
+
+    .related-quotes {
+        padding: 20px;
+    }
 }

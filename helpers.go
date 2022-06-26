@@ -9,7 +9,7 @@ import (
 
 func PagePathHelper(config *config.Config) func(page, index int) string {
 	return func(page, index int) string {
-		return fmt.Sprintf(config.Generator.Paths.Detail, page*perpPage+index)
+		return fmt.Sprintf(config.Generator.Paths.Detail, page*config.Generator.CitationsPerPage+index)
 	}
 }
 

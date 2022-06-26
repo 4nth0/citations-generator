@@ -1,20 +1,18 @@
 {{> header}}
-<blockquote class="otro-blockquote">
-    {{citation}}
-    <span>Napoléon 1er</span>
+<blockquote class="blockquote">
+    {{citation.Citation}}
+    <span>{{citation.author}}</span>
 </blockquote>
 
 <div class="related-quotes">
     {{#if citation_prev}}
-    <blockquote class="otro-blockquote">
+    <blockquote class="blockquote">
         <a href="{{relatedPagePath citation_prev.Index}}">{{citation_prev.Citation.Citation}}</a>
-        <span>{{citation_prev.Citation.Author}}</span>
     </blockquote>
     {{/if}}
     {{#if citation_next}}
-    <blockquote class="otro-blockquote">
+    <blockquote class="blockquote">
         <a href="{{relatedPagePath citation_next.Index}}">{{citation_next.Citation.Citation}}</a>
-        <span>{{citation_prev.Citation.Author}}</span>
     </blockquote>
     {{/if}}
 </div>
