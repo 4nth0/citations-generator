@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/4nth0/citations-generator/internal/citations"
 	"github.com/4nth0/citations-generator/internal/config"
@@ -13,7 +12,8 @@ import (
 )
 
 const (
-	exportPath = "./export"
+	publicFolderPath = "./public"
+	exportFolderPath = "./export"
 
 	perpPage = 10
 )
@@ -60,45 +60,17 @@ func main() {
 func initTemplateEngine(config *config.Config) (template.Client, error) {
 	return template.New(
 		template.WithPartials(config.Generator.Templates.Partials),
-		template.WithHelper("pagePath", func(page, index int) string {
-			return fmt.Sprintf(config.Generator.Paths.Detail, page*perpPage+index)
-		}),
-		template.WithHelper("relatedPagePath", func(index int) string {
-			return fmt.Sprintf(config.Generator.Paths.Detail, index)
-		}),
-		template.WithHelper("pagination", func(page, pages int) string {
-			links := []string{}
-
-			for i := 0; i < pages+1; i++ {
-				var path string
-				if i == 0 {
-					path = config.Generator.Paths.Index
-				} else {
-					path = fmt.Sprintf(config.Generator.Paths.Listing, i)
-				}
-
-				currentClass := ""
-				if i == page {
-					currentClass = "class='current'"
-				}
-				links = append(links, fmt.Sprintf(
-					"<li %s><a href='%s'>%d</a></li>",
-					currentClass,
-					path,
-					i+1,
-				))
-			}
-
-			return fmt.Sprintf("<ul class='pagination'>%s</ul>", strings.Join(links, " "))
-		}),
+		template.WithHelper("pagePath", PagePathHelper(config)),
+		template.WithHelper("relatedPagePath", RelatedPagePathHelper(config)),
+		template.WithHelper("pagination", PaginationHelper(config)),
 	)
 }
 
 func InitExportForlder() {
-	os.RemoveAll(exportPath)
-	os.Mkdir(exportPath, 0755)
+	os.RemoveAll(exportFolderPath)
+	os.Mkdir(exportFolderPath, 0755)
 
-	err := cp.Copy("./public", "./export")
+	err := cp.Copy(publicFolderPath, exportFolderPath)
 	if err != nil {
 		panic(err)
 	}
