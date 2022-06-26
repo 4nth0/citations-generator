@@ -3,6 +3,9 @@ package generator
 import (
 	"fmt"
 	"os"
+
+	"github.com/4nth0/citations-generator/internal/citations"
+	"github.com/4nth0/citations-generator/internal/config"
 )
 
 type TemplateManager interface {
@@ -10,19 +13,32 @@ type TemplateManager interface {
 }
 
 type Client struct {
+	config    *config.Config
 	tpl       TemplateManager
-	Citations []string
+	Citations []citations.Citation
 	Paths     map[string]string
 	Layouts   map[string]string
 }
 
-func New(tpl TemplateManager, citations []string, layouts map[string]string, paths map[string]string) *Client {
+func New(
+	config *config.Config,
+	tpl TemplateManager,
+	citations []citations.Citation,
+	layouts map[string]string,
+	paths map[string]string,
+) *Client {
 	return &Client{
+		config:    config,
 		tpl:       tpl,
 		Citations: citations,
 		Paths:     paths,
 		Layouts:   layouts,
 	}
+}
+
+type RelatedCitation struct {
+	Citation citations.Citation
+	Index    int
 }
 
 func (c Client) GenerateDetailPages() error {
@@ -42,10 +58,7 @@ func (c Client) GenerateDetailPages() error {
 		if idx == 0 {
 			prevIndex = len(c.Citations) - 1
 		}
-		tplCtx["citation_prev"] = struct {
-			Citation string
-			Index    int
-		}{
+		tplCtx["citation_prev"] = RelatedCitation{
 			Citation: c.Citations[prevIndex],
 			Index:    prevIndex,
 		}
@@ -54,18 +67,16 @@ func (c Client) GenerateDetailPages() error {
 		if nextIndex >= len(c.Citations) {
 			nextIndex = 0
 		}
-		tplCtx["citation_next"] = struct {
-			Citation string
-			Index    int
-		}{
+
+		tplCtx["citation_next"] = RelatedCitation{
 			Citation: c.Citations[nextIndex],
 			Index:    nextIndex,
 		}
 
 		tplCtx["og"] = map[string]string{
-			"title":       "Citation de Napoléon 1er, Empereur des français",
-			"url":         fmt.Sprintf("citation-%d.html", idx),
-			"description": citation,
+			"title":       c.config.Author.Name,
+			"url":         fmt.Sprintf(c.config.Base+c.config.Generator.Paths.Detail, idx),
+			"description": citation.Citation,
 		}
 
 		rendered, err := generate(tplCtx)

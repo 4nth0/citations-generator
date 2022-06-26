@@ -39,6 +39,7 @@ func main() {
 	}
 
 	gen := generator.New(
+		config,
 		tpl,
 		citations,
 		map[string]string{

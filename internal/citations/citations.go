@@ -6,13 +6,19 @@ import (
 	"os"
 )
 
+type Citation struct {
+	Citation      string `json:"citation"`
+	Author        string `json:"author"`
+	AuthorPicture string `json:"author_picture"`
+}
+
 type Client interface {
-	LoadCitations() ([]string, error)
+	LoadCitations() ([]Citation, error)
 }
 
 type client struct {
 	Path      string
-	Citations []string
+	Citations []Citation
 }
 
 func New(path string) Client {
@@ -21,7 +27,7 @@ func New(path string) Client {
 	}
 }
 
-func (c *client) LoadCitations() ([]string, error) {
+func (c *client) LoadCitations() ([]Citation, error) {
 	raw, err := LoadFile(c.Path)
 	if err != nil {
 		return nil, err

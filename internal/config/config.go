@@ -12,6 +12,7 @@ const (
 )
 
 type Config struct {
+	Base   string `yaml:"base"`
 	Author struct {
 		Name string `yaml:"name"`
 		Bio  string `yaml:"bio"`
