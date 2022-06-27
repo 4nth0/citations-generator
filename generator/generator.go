@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/4nth0/citations-generator/internal/citations"
-	"github.com/4nth0/citations-generator/internal/config"
+	"github.com/4nth0/citations-generator/citations"
+	"github.com/4nth0/citations-generator/config"
 )
 
 type TemplateManager interface {

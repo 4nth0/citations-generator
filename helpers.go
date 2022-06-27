@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/4nth0/citations-generator/internal/config"
+	"github.com/4nth0/citations-generator/config"
 )
 
 func PagePathHelper(config *config.Config) func(page, index int) string {
