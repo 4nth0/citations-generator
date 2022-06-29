@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
 
 	"github.com/4nth0/citations-generator/citations"
@@ -9,6 +9,7 @@ import (
 	"github.com/4nth0/citations-generator/generator"
 	"github.com/4nth0/citations-generator/template"
 	cp "github.com/otiai10/copy"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -19,13 +20,14 @@ const (
 func main() {
 	config, err := config.Load()
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		return
 	}
 
 	citationsClient := citations.New(config.Generator.Source)
 	citations, err := citationsClient.LoadCitations()
 	if err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		return
 	}
 
@@ -33,7 +35,8 @@ func main() {
 
 	tpl, err := initTemplateEngine(config)
 	if err != nil {
-		panic(err)
+		log.Error(err)
+		return
 	}
 
 	gen := generator.New(
@@ -56,11 +59,18 @@ func main() {
 }
 
 func initTemplateEngine(config *config.Config) (template.Client, error) {
+	partials, err := LoadPartials(config.Generator.Templates.Partials)
+	if err != nil {
+		return nil, err
+	}
+
 	return template.New(
-		template.WithPartials(config.Generator.Templates.Partials),
-		template.WithHelper("pagePath", PagePathHelper(config)),
-		template.WithHelper("relatedPagePath", RelatedPagePathHelper(config)),
-		template.WithHelper("pagination", PaginationHelper(config)),
+		template.WithPartials(partials),
+		template.WithHelpers(map[string]interface{}{
+			"pagePath":        PagePathHelper(config),
+			"relatedPagePath": RelatedPagePathHelper(config),
+			"pagination":      PaginationHelper(config),
+		}),
 	)
 }
 
@@ -72,4 +82,26 @@ func InitExportForlder() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func LoadPartials(partials map[string]string) (map[string]string, error) {
+	partialsMap := make(map[string]string)
+	for name, path := range partials {
+		partial, err := LoadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		partialsMap[name] = string(partial)
+	}
+	return partialsMap, nil
+}
+
+func LoadFile(path string) ([]byte, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return []byte{}, err
+	}
+	defer file.Close()
+
+	return ioutil.ReadAll(file)
 }

@@ -12,49 +12,10 @@ type Client interface {
 }
 
 type client struct {
-	Partials map[string]string
-}
-
-type Option func(*client) error
-
-func WithPartial(name, path string) Option {
-	return func(c *client) error {
-		partialRaw, err := LoadFile(path)
-		if err != nil {
-			return err
-		}
-		c.Partials[name] = string(partialRaw)
-		raymond.RegisterPartial(name, string(partialRaw))
-		return nil
-	}
-}
-
-func WithPartials(partials map[string]string) Option {
-	return func(c *client) error {
-		for name, path := range partials {
-			partialRaw, err := LoadFile(path)
-			if err != nil {
-				return err
-			}
-			c.Partials[name] = string(partialRaw)
-			raymond.RegisterPartial(name, string(partialRaw))
-		}
-
-		return nil
-	}
-}
-
-func WithHelper(name string, helper interface{}) Option {
-	return func(c *client) error {
-		raymond.RegisterHelper(name, helper)
-		return nil
-	}
 }
 
 func New(opts ...Option) (Client, error) {
-	c := &client{
-		Partials: make(map[string]string),
-	}
+	c := &client{}
 
 	for _, opt := range opts {
 		err := opt(c)
