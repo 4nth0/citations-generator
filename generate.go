@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 
@@ -53,6 +54,9 @@ func main() {
 			"listing": config.Generator.Templates.Listing.Dest,
 		},
 	)
+
+	pages := gen.GeneratePages()
+	fmt.Println(pages)
 
 	gen.GenerateDetailPages()
 	gen.GenerateIndexPage(config.Generator.CitationsPerPage)

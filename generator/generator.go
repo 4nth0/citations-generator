@@ -41,6 +41,70 @@ type RelatedCitation struct {
 	Index    int
 }
 
+type Page struct {
+	Path    string
+	Content string
+}
+
+type PagesTree map[string]Page
+
+func (c Client) GeneratePages() PagesTree {
+	export := PagesTree{}
+
+	c.generateDetailsPages(export)
+
+	return export
+}
+
+func (c Client) generateDetailsPages(pages PagesTree) {
+	generate, err := c.tpl.UseLayout(c.Layouts["detail"])
+	if err != nil {
+		panic(err)
+	}
+
+	for idx, citation := range c.Citations {
+		filePath := fmt.Sprintf(c.Paths["detail"], idx)
+
+		tplCtx := map[string]interface{}{
+			"citation": citation,
+		}
+
+		prevIndex := idx - 1
+		if idx == 0 {
+			prevIndex = len(c.Citations) - 1
+		}
+		tplCtx["citation_prev"] = RelatedCitation{
+			Citation: c.Citations[prevIndex],
+			Index:    prevIndex,
+		}
+
+		nextIndex := idx + 1
+		if nextIndex >= len(c.Citations) {
+			nextIndex = 0
+		}
+
+		tplCtx["citation_next"] = RelatedCitation{
+			Citation: c.Citations[nextIndex],
+			Index:    nextIndex,
+		}
+
+		tplCtx["og"] = map[string]string{
+			"title":       c.config.Author.Name,
+			"url":         fmt.Sprintf(c.config.Base+c.config.Generator.Paths.Detail, idx),
+			"description": citation.Citation,
+		}
+
+		rendered, err := generate(tplCtx)
+		if err != nil {
+			return
+		}
+
+		pages[filePath] = Page{
+			Content: rendered,
+		}
+	}
+}
+
 func (c Client) GenerateDetailPages() error {
 	generate, err := c.tpl.UseLayout(c.Layouts["detail"])
 	if err != nil {
