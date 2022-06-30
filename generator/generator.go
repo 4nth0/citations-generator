@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	"os"
+	"strings"
 
 	"github.com/4nth0/citations-generator/citations"
 	"github.com/4nth0/citations-generator/config"
@@ -13,27 +13,12 @@ type TemplateManager interface {
 }
 
 type Client struct {
-	config    *config.Config
-	tpl       TemplateManager
+	Config    *config.Config
+	TPL       TemplateManager
 	Citations []citations.Citation
 	Paths     map[string]string
 	Layouts   map[string]string
-}
-
-func New(
-	config *config.Config,
-	tpl TemplateManager,
-	citations []citations.Citation,
-	layouts map[string]string,
-	paths map[string]string,
-) *Client {
-	return &Client{
-		config:    config,
-		tpl:       tpl,
-		Citations: citations,
-		Paths:     paths,
-		Layouts:   layouts,
-	}
+	PerPage   int
 }
 
 type RelatedCitation struct {
@@ -44,6 +29,7 @@ type RelatedCitation struct {
 type Page struct {
 	Path    string
 	Content string
+	Context map[string]interface{}
 }
 
 type PagesTree map[string]Page
@@ -52,28 +38,44 @@ func (c Client) GeneratePages() PagesTree {
 	export := PagesTree{}
 
 	c.generateDetailsPages(export)
+	c.generateIndexPages(export)
+	c.generateSiteMap(export)
 
 	return export
 }
 
+func (c Client) generateSiteMap(pages PagesTree) {
+	pagesPaths := []string{}
+	for _, page := range pages {
+		pagesPaths = append(pagesPaths, page.Path)
+	}
+
+	pages["./export/sitemap.txt"] = Page{
+		Content: strings.Join(pagesPaths, "\n"),
+	}
+}
+
 func (c Client) generateDetailsPages(pages PagesTree) {
-	generate, err := c.tpl.UseLayout(c.Layouts["detail"])
+	generate, err := c.TPL.UseLayout(c.Layouts["detail"])
 	if err != nil {
 		panic(err)
 	}
 
 	for idx, citation := range c.Citations {
 		filePath := fmt.Sprintf(c.Paths["detail"], idx)
-
-		tplCtx := map[string]interface{}{
-			"citation": citation,
+		absolutePath := fmt.Sprintf(c.Config.Base+c.Config.Generator.Paths.Detail, idx)
+		page := Page{
+			Path:    absolutePath,
+			Context: map[string]interface{}{},
 		}
+
+		page.Context["citation"] = citation
 
 		prevIndex := idx - 1
 		if idx == 0 {
 			prevIndex = len(c.Citations) - 1
 		}
-		tplCtx["citation_prev"] = RelatedCitation{
+		page.Context["citation_prev"] = RelatedCitation{
 			Citation: c.Citations[prevIndex],
 			Index:    prevIndex,
 		}
@@ -83,125 +85,72 @@ func (c Client) generateDetailsPages(pages PagesTree) {
 			nextIndex = 0
 		}
 
-		tplCtx["citation_next"] = RelatedCitation{
+		page.Context["citation_next"] = RelatedCitation{
 			Citation: c.Citations[nextIndex],
 			Index:    nextIndex,
 		}
 
-		tplCtx["og"] = map[string]string{
-			"title":       c.config.Author.Name,
-			"url":         fmt.Sprintf(c.config.Base+c.config.Generator.Paths.Detail, idx),
+		page.Context["og"] = map[string]string{
+			"title":       c.Config.Author.Name,
+			"url":         absolutePath,
 			"description": citation.Citation,
 		}
 
-		rendered, err := generate(tplCtx)
+		rendered, err := generate(page.Context)
 		if err != nil {
 			return
 		}
 
-		pages[filePath] = Page{
-			Content: rendered,
-		}
+		page.Content = rendered
+
+		pages[filePath] = page
 	}
 }
 
-func (c Client) GenerateDetailPages() error {
-	generate, err := c.tpl.UseLayout(c.Layouts["detail"])
+func (c Client) generateIndexPages(pages PagesTree) {
+	pagesCount := len(c.Citations) / c.PerPage
+	generate, err := c.TPL.UseLayout(c.Layouts["listing"])
 	if err != nil {
 		panic(err)
 	}
 
-	for idx, citation := range c.Citations {
-		filePath := fmt.Sprintf(c.Paths["detail"], idx)
+	for i := 0; i < len(c.Citations); i += c.PerPage {
 
-		tplCtx := map[string]interface{}{
-			"citation": citation,
-		}
-
-		prevIndex := idx - 1
-		if idx == 0 {
-			prevIndex = len(c.Citations) - 1
-		}
-		tplCtx["citation_prev"] = RelatedCitation{
-			Citation: c.Citations[prevIndex],
-			Index:    prevIndex,
-		}
-
-		nextIndex := idx + 1
-		if nextIndex >= len(c.Citations) {
-			nextIndex = 0
-		}
-
-		tplCtx["citation_next"] = RelatedCitation{
-			Citation: c.Citations[nextIndex],
-			Index:    nextIndex,
-		}
-
-		tplCtx["og"] = map[string]string{
-			"title":       c.config.Author.Name,
-			"url":         fmt.Sprintf(c.config.Base+c.config.Generator.Paths.Detail, idx),
-			"description": citation.Citation,
-		}
-
-		rendered, err := generate(tplCtx)
-		if err != nil {
-			return err
-		}
-
-		err = PutInFile(filePath, rendered)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (c Client) GenerateIndexPage(perPage int) error {
-	pages := len(c.Citations) / perPage
-	generate, err := c.tpl.UseLayout(c.Layouts["listing"])
-	if err != nil {
-		panic(err)
-	}
-
-	for i := 0; i < len(c.Citations); i += perPage {
-		offset := i + perPage
+		page := i / c.PerPage
+		offset := i + c.PerPage
 		if offset > len(c.Citations) {
 			offset = len(c.Citations)
 		}
-		citationsPerPage := c.Citations[i:offset]
-		page := i / perPage
+		citations := c.Citations[i:offset]
 
-		generated, err := generate(map[string]interface{}{
-			"citations": citationsPerPage,
+		var absolutePath string
+		var exportPath string
+		if i > 0 {
+			exportPath = fmt.Sprintf(c.Paths["listing"], page)
+			absolutePath = fmt.Sprintf(c.Config.Base+c.Config.Generator.Paths.Listing, page)
+		} else {
+			exportPath = c.Paths["index"]
+			absolutePath = c.Config.Base + c.Config.Generator.Paths.Listing
+		}
+
+		export := Page{
+			Context: map[string]interface{}{},
+			Path:    absolutePath,
+		}
+
+		export.Context = map[string]interface{}{
+			"citations": citations,
 			"page":      page,
-			"pages":     pages,
-		})
+			"pages":     pagesCount,
+		}
+
+		generated, err := generate(export.Context)
 		if err != nil {
 			panic(err)
 		}
 
-		var pathToSave string
-		if i > 0 {
-			pathToSave = fmt.Sprintf(c.Paths["listing"], page)
-		} else {
-			pathToSave = c.Paths["index"]
-		}
+		export.Content = generated
 
-		PutInFile(pathToSave, generated)
+		pages[exportPath] = export
 	}
-	return nil
-}
-
-func PutInFile(filePath, content string) error {
-	file, err := os.Create(filePath)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(content)
-	if err != nil {
-		return err
-	}
-	return nil
 }
