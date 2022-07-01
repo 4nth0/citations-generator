@@ -6,6 +6,7 @@ import (
 
 	"github.com/4nth0/citations-generator/citations"
 	"github.com/4nth0/citations-generator/config"
+	"github.com/4nth0/citations-generator/pkg/sitemap"
 )
 
 type TemplateManager interface {
@@ -45,9 +46,21 @@ func (c Client) GeneratePages() PagesTree {
 }
 
 func (c Client) generateSiteMap(pages PagesTree) {
+	sm := sitemap.NewSiteMap()
 	pagesPaths := []string{}
+	today := "2005-01-01"
 	for _, page := range pages {
+		sm.AddPage(
+			page.Path,
+			sitemap.WithLastMod(today),
+			sitemap.WithChangeFreq("never"),
+			sitemap.WithPriority(0.5),
+		)
 		pagesPaths = append(pagesPaths, page.Path)
+	}
+
+	pages["./export/sitemap.xml"] = Page{
+		Content: sm.Generate(),
 	}
 
 	pages["./export/sitemap.txt"] = Page{
